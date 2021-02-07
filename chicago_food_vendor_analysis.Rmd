@@ -1,0 +1,242 @@
+---
+title: "Analysis on the Safety of Chicago Food Vendors"
+author: "Joo Yong Daniel Chung"
+date: "12/16/2020"
+output: html_document
+---
+
+![](https://uofi.box.com/shared/static/z7jfpqa7w51bieck2x4xx44spd2jb537.jpg)
+
+### Goal:
+
+**We're going to analyze and investigate the different safety levels of various food vendors in Chicago. Safety Levels are important, especially among food vendors! Through different methods, we're going to have several investigative cycles to come up with accurate, data-driven interpretations and conclusions!!!**
+
+
+## Inspection Data for Food Places
+
+```{r echo = T, message = F}
+library(tidyverse)
+library(kableExtra)
+library(ggplot2)
+library(cowplot)
+```
+
+```{r,message = F}
+Inspections <- read_csv("https://uofi.box.com/shared/static/8smeeg30n4njw82zfjmj5fzoc2p7cgoa.csv")
+```
+
+This dataset (.csv) contains 124372 observations and 16 columns. The observations are places that serve food including grocery stores, butchers, bakeries, restaurants, school cafeterias, gas stations, and delis throughout the city limits of Chicago. These establishments pass, fail, or have certain conditions associated with passing the inspection. Violation_severity equals 1 if the restaurant has either a critical or a serious violation or both and equals 0 otherwise. The original source is the City of Chicago Data Portal https://data.cityofchicago.org/Health-Human-Services/Food-Inspections/4ijn-s7e5.
+
+
+### First Investigative Cycle (PPDAC)
+
+![](https://uofi.box.com/shared/static/q4hrrsv4couvs7gnouykwgjxdvc3eb5j.jpg)
+
+Before we start tackling such questions, we want to make sure that the investigators have investigated the food vendors in Chicago with correct measures. With Chicago being such a big city, there might be discriminatory inspection practices based on different sections of Chicago. Let's check whether there is any sectarianism within the investigation. If we find such sectarianism, that we should abandon this data as it's not valid.
+
+Let's first look at the most recent investigations that have occured in each restaurants.
+
+```{r}
+Unique_insp <- Inspections %>%
+  group_by(`AKA Name`)
+
+Most_recent_inspections <- Unique_insp %>%
+  arrange(desc(`Inspection Date`))%>%
+  slice(1)
+```
+
+Then let's seperate the data into restaurants that passed the inspection and failed the inspection.
+
+```{r}
+passed_rest <-
+  Most_recent_inspections %>%
+  filter(Results == "Pass")
+
+failed_rest <- 
+  Most_recent_inspections %>%
+  filter(Results == "Fail")
+```
+
+Afterwards, let's plot the failed restaurants and passed restaurants by location.
+
+```{r}
+plot1 <- ggplot(data = passed_rest) +
+  geom_point(aes(x= Longitude, y= Latitude), colour = "darkslategrey") +
+  labs(title = "Passed Restaurants")
+
+plot2 <-ggplot(data = failed_rest) +
+  geom_point(aes(x= Longitude, y= Latitude), colour = "indianred2") +
+  labs(title = "Failed Restaurants")
+
+plot_grid(plot1,plot2,align = "h",ncol = 2)
+```
+
+Looking at the graph, we can tell that the restaurants that failed the inspection and the restaurants that passed the inspection are located evenly throughout the city. This indicates that the possibility of sectarianism is very low, and this data seems to be a valid data. There aren't any one specific region that passed the inspection more than the fails, and its opposites are also true.
+
+Knowing that the inspections are fair and sound, and the data is valid, we can now move on to the next step, which is about safety levels of various food vendors in Chicago.
+
+### Second Investigative Cycle (PPDAC)
+
+![](https://uofi.box.com/shared/static/g1jaselndjqng65o3y0fod70gedy6bw6.jpg)
+
+Now let's ask ourselves the first question : Which food vendors are the most likely to damage the health of the public with their violations of inspections?
+
+In order to figure this out, we have to consider the risk level of the food vendor and the number of total violations the place had in the past. We would like to have food places with highest risk of adversely affecting public health to have the smallest amount of violations, while it's more flexible with food vendors that have a lower risk. In order to compensate for different risk levels, we'll put different limitations for vendors with different risk levels. These limitations are 16 for risk level 3, 18 for risk level 2, and 20 for risk level 1 (3 being the lowest risk and 1 being the highest). Let's list out the food vendors that go over these limitations.
+
+```{r}
+closed <-
+  Inspections %>%
+  filter((total_violations > 16 & Risk == "Risk 3 (Low)") | (total_violations > 18 & Risk == "Risk 2 (Medium)") | (total_violations > 20 & Risk == "Risk 1 (High)")) %>%
+  select(`AKA Name`,`Facility Type`, Risk, total_violations,`Inspection Date`) %>%
+  arrange(Risk,total_violations,`AKA Name`)
+
+closed %>%
+  kbl(caption = "Unsafest Places to Eat") %>%
+  kable_material(c("striped","hover"))
+```
+
+With the such overwhelming number of violations in these restaurants, it seems like they should pay a hefty fines or temporarily close the place to learn a lesson to follow the safety regulations imposed by the city.
+
+Let's see where these places are located at and their associated Facilities (so that inspectors know where to put more cautionary measures!)
+
+```{r}
+risky <- closed$`AKA Name`
+
+risky_restaurants <- Most_recent_inspections %>%
+  filter(`AKA Name` %in% risky)
+  
+ggplot(data = risky_restaurants) +
+  geom_point(aes(x = Longitude, y= Latitude), colour = "red") + 
+  labs(title = "Facilities of Places to avoid") +
+  geom_text(aes(Longitude[1]-.002,Latitude[1]+.01,label =`Facility Type`[1]),color = "deepskyblue4",size = 2.5) +
+  geom_text(aes(Longitude[2]-.002,Latitude[2]+.01,label =`Facility Type`[2]),color = "deepskyblue4",size = 2.5) +
+  geom_text(aes(Longitude[3]+.003,Latitude[3]+.01,label =`Facility Type`[3]),color = "deepskyblue4",size = 2.5) +
+  geom_text(aes(Longitude[4]-.002,Latitude[4]+.01,label =`Facility Type`[4]),color = "deepskyblue4",size = 2.5) +
+  geom_text(aes(Longitude[5]-.002,Latitude[5]+.01,label =`Facility Type`[5]),color = "deepskyblue4",size = 2.5) +
+  geom_text(aes(Longitude[6]-.002,Latitude[6]+.01,label =`Facility Type`[6]),color = "deepskyblue4",size = 2.5) +
+  geom_text(aes(Longitude[7]-.002,Latitude[7]+.01,label =`Facility Type`[7]),color = "deepskyblue4",size = 2.5) +
+  theme_minimal()
+
+```
+
+These are the locations of food vendors that should be avoided and seem to damage the public health the most. Although low risk places are somewhat tolerable (risk level 2 or 3), since their main menu might not necessarily food (although it still might not be a good idea to go), the places that are marked as Risk 1 level must be absolutely avoided. These Risk 1 level places are most likely going to be restaurants, and it might not be the best option to go to a place where they violated over 20 food inspections. Like mentioned before, the city should definitely pose a very harsh restrictions and punishments that will make these food vendors to never consider violating the food inspections.
+
+### Third Investigative Cycle (PPDAC)
+
+![](https://uofi.box.com/shared/static/wg2kqwn5pyhg8iqov0k9i81nupy5p62k.jpg)
+
+Now let's dive into next question related to safety. Among the restaurants listed, which restaurants are safe places to eat with the family, and where are their locations at?
+
+First, let's look at only the most recent restaurants in the data, as the data is filled with food vendors other than restaurants and have many repeats due to several inspections over the years.
+
+```{r}
+recent_restaurants <- 
+  Most_recent_inspections %>%
+  filter (`Facility Type` == "Restaurant")
+```
+
+
+Let's see where these restaurants are located at in our map.
+
+
+```{r}
+ggplot(data = recent_restaurants) +
+  geom_point(aes(x = Longitude,y=Latitude),colour = "darkseagreen3")
+
+nrow(recent_restaurants)
+```
+
+
+Wow! That's a lot of restaurants in Chicago. In fact, there are in total of 11593 restaurants in Chicago!!! But which of these restaurants are safe to go with your family?? Let's find that out! 1) Filter out all the restaurants that recently got both critical and serious violations on its most recent inspection 2) Filter out all the restaurants that received greater than or equal to 5 total violations since their openings.
+
+
+```{r}
+total_violation_10 <-
+  Inspections %>%
+  filter (`Facility Type` == "Restaurant") %>%
+  group_by(`AKA Name`) %>%
+  arrange(desc(total_violations)) %>%
+  slice(1) %>%
+  filter(total_violations < 5) %>%
+  select(`AKA Name`,Longitude,Latitude)
+
+severe_vio <- 
+  recent_restaurants %>%
+  filter(violation_severity == 0) %>%
+  select(`AKA Name`,Longitude,Latitude)
+
+safe_restaurants <- intersect(total_violation_10,severe_vio)
+```
+
+
+Now visualize the locations of these safe restaurants in Chicago!
+
+
+```{r}
+ggplot(data = safe_restaurants) +
+  geom_point(aes(x = Longitude,y = Latitude), colour = "dodgerblue3")
+
+nrow(safe_restaurants)
+```
+
+That literally truncated our number of restaurants by a lot! However, there's still 2385 restaurants remaining to choose. I'd say that's enough choices to choose which restaurants to go to in Chicago! According to our data, these selected 2385 restaurants are safe places to go and dine in. However, the other 8208 (11593 - 2385 = 8208) restaurants aren't recommended by our data, as they have a pretty decent amount of food inspection violations to say that they are not safe.
+
+### Fourth Investigative Cycle (PPDAC)
+
+![](https://uofi.box.com/shared/static/gozikrb9h5nnftnskryvqosmk1cnrn3r.jpg)
+
+Looking at the data, one place that was interesting to note was school. When sorting what kind of Facilities were recorded in the dataset, "school" was the third highest food vendor in Chicago area. As the third biggest city in America, it is understandable that there are so many schools in Chicago, and these schools most likely serve food in their cafeterias. 
+
+```{r,message = F}
+Facilities <- Most_recent_inspections %>%
+  group_by(`Facility Type`) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>% head(10)
+
+Facilities %>%
+  kbl(caption = "Top 10 Food Facilities in Chicago") %>%
+  kable_material(c("striped","hover"))
+```
+
+Now here comes the question. How safe are these school cafeterias? As these schools are for the kids, it is critical that these schools should have very few, if not any, food inspection violations. Let's investigate whether school food vendors, or cafeterias, are truly safe for kids.
+
+```{r}
+recent_school <- 
+  Most_recent_inspections %>%
+  filter (`Facility Type` == "School")
+```
+
+Let's see how many schools there are per violation. We'd like all the schools to have zero number of violations.
+
+```{r,message = F}
+violated_schools <-
+  recent_school %>%
+  group_by(`total_violations`) %>%
+  summarise(number_of_schools = n())
+
+violated_schools %>%
+  kbl(caption = "Number of Schools per Violation") %>%
+  kable_material(c("striped","hover"))
+
+#Percentage of schools that are greater than or equal to
+(63+27+12+4+2)/nrow(recent_school)*100
+```
+
+In the previous investigative cycle, we said any restaurants that have greater than or equal to 5 violations are not safe restaurants. We see that in this data, there are more than 100 schools that have violated the violations 5 or more times. With simple mathematical calculations, we see that this is over 10% of the schools that are in this dataset. This is simply shocking and comes to show how unsafe these school cafeterias can be. It also comes to show that, again, that violations must be stronger so that places that have received violations must never even come to violate again.
+
+For reference, let's see where the schools that have 5 or more violations in Chicago are located relative to other safe schools.
+
+```{r}
+sch_loc <-
+  recent_school %>%
+  mutate(safe_level =ifelse(total_violations >= 5, "Unsafe","Safe"))
+
+ggplot(data = sch_loc) +
+  geom_point(aes(x=Longitude,y=Latitude,color = safe_level)) +
+  labs(title="School Cafeteria Safety")
+```
+
+It is highly recommended that the students that go to schools in blue dots bring home packed lunch or go outside to grab food. These school cafeterias are simply too risky for children to grab meal, as they violated food inspections way too many times.
+
+
+Although we were able to make analysis based on the data given, we're not sure whether food vendors with many violations are truly bad places to eat. We stated that these places should be avoided because of their past history, but maybe after their most recent violation, they remodeled their place to be hygienic and clean? We do not know the truth but can only speculate based off of their past histories using the data. Also, another issue that should come to our mind is how can we stop restaurants from violating these food regulations? We have posed many possible solutions, such as imposing harsher punishments, but we do not know the true answer to this question and the city have to undergo different strategies to find the optimal strategy to reduce the number of food violations from these vendors.

@@ -1,0 +1,141 @@
+---
+title: "Local Theater Analysis"
+author: "Daniel_Chung"
+date: "12/15/2020"
+output: html_document
+---
+
+![](https://uofi.box.com/shared/static/xgp3l4a1z9dfnkdy3l5dgf9m9thgxh6l.jpg)
+
+### Goal:
+
+**We're going to analyze and investigate the one of the closed down Champaign theaters to see which shows were popular in this local region, and what potentially might have been the reason for its closure.**
+
+## Local Champaign Art Theather Data 
+
+```{r echo = T, message = F}
+library(tidyverse)
+library(kableExtra)
+library(ggplot2)
+library(cowplot)
+```
+
+
+```{r,message = F}
+Art_Theater <- read.csv("https://uofi.box.com/shared/static/2fepcvuhzgc97p402srwo5vdux2s0gt3.csv", header = TRUE)
+```
+
+It contains 503 unique showings and 3249 unique show times. The raw dimension of the dataset is 9564 rows and 6 columns. It contains ticket sales information for the various showings of films. The Art Theater is a movie theater in Champaign, IL that recently closed for business permanently. The data contains sales dating between 2016 and 2019.
+
+For this data, we can pose many questions that are related to shows that the theater premiered. What shows were the most popular during 2016 and 2019 in the theater? Which shows generated the most revenue? Who went to watch the shows in these theaters? Was it heavily comprised of students because it was so close to the University?
+
+### First Investigative Cycle (PPDAC)
+
+![](https://uofi.box.com/shared/static/igogibuz7jp4ep6irzqsece5saj482t2.jpg){height=600px}
+
+Let's first look at which movies were popular in theater!! In order to determine this, let's group by the movie names and count the total audience members in each movie! We'll see which 20 movies were the most popular!!
+
+```{r, message = FALSE}
+
+# Data Management for Table
+
+popular_table <- 
+  Art_Theater %>%
+  group_by(EventName) %>%
+  summarize(total_quantity = sum(Quantity)) %>%
+  arrange(desc(total_quantity)) %>%
+  head(20)
+
+popular_table %>%
+  kbl() %>%
+  kable_material(c("striped","hover"))
+```
+
+
+Looking at the number of people that watched the movie, we can infer that the theater must have been pretty small as the most popular movie had only 3240 audience members. Let's visualize these results by audience members so that who comprised the viewings of these movies!
+
+
+```{r,message = FALSE}
+# Data Mangaement for Visualization for top 10
+popular_visualize_10 <- 
+  Art_Theater %>%
+  group_by(EventName) %>%
+  mutate(total_quantity = sum(Quantity)) %>%
+  filter(total_quantity >= popular_table$total_quantity[10]) %>%
+  group_by(EventName,TicketType) %>%
+  summarize(total_type = sum(Quantity))
+
+#Data Management for visualization for 10 - 20
+popular_visualize_20 <- 
+  Art_Theater %>%
+  group_by(EventName) %>%
+  mutate(total_quantity = sum(Quantity)) %>%
+  filter(total_quantity < popular_table$total_quantity[10] & total_quantity >= min(popular_table$total_quantity)) %>%
+  group_by(EventName,TicketType) %>%
+  summarize(total_type = sum(Quantity))
+
+```
+
+```{r}
+ggplot(data = popular_visualize_10)+
+  geom_bar(mapping = aes(x =factor(EventName,levels = popular_table$EventName[10:1]), y = total_type, fill = factor(TicketType)),stat = "identity") +
+  coord_flip() + 
+  labs(title = "Top Movies from 1 to 10", y = "Number of Audience", x = "Movie Title", fill = "Audience Type")
+
+ggplot(data = popular_visualize_20)+
+  geom_bar(mapping = aes(x =factor(EventName,levels = popular_table$EventName[20:10]), y = total_type, fill = factor(TicketType)),stat = "identity") +
+  coord_flip() + 
+  labs(title = "Top Movies from 10 to 20", y = "Number of Audience", x = "Movie Title", fill = "Audience Type")
+```
+
+Wow! The results are very unexpected. While we initially thought that there will be a heavy student viewers due to the university, we can observe that rather, a large number of senior citizens have watched the film, forming the second largest audience type in the Champaign theathers. Even more surprisingly, for some movies, they formed the largest audience member sector. Another thing that's interesting to note is that you can tell that all these movies that are high in audience didn't necessarily choose the contempory, popular films (such as superhero movies or blockbuster). Rather, they are mostly documentaries or peaceful, old movies, which is interesting to note.
+
+### Second Investigative Cycle (PPDAC)
+
+Let's now look at the the audience group as the the audience types for the top 20 movies were rather unexpected. Let's group the movies by the audiences, and count the total number of audiences.
+
+```{r, message = FALSE}
+audiences <-
+  Art_Theater %>%
+  group_by(TicketType) %>%
+  summarize(total_num = sum(Quantity)) %>%
+  arrange(desc(total_num))
+
+audiences %>%
+  kbl %>%
+  kable_material(c("striped","hover"))
+```
+
+Looking at the ticket type, senior citizen indeed take up 2nd largest of the ticket type, with more than double of students and more than half of adults. If this is the case, then we can assume that the movies that must be shown should consider the viewing prefernces of seniors more than the teenagers/students. Premiering old movies might've generated more audience and revenue! Maybe if the theater knew this, they might've taken different approaches to generate more revenues and might've not had to close.
+
+### Third Investigative Cycle (PPDAC)
+
+![](https://uofi.box.com/shared/static/jcnw999gb8ddsvo4cf05zfjxrk6ack23.jpg){height=600px}
+
+Let's look at which movies generated most revenues! Group the data by name and list them out by the highest total earnings. In order to do this, we should sum up the prices and make a new column called total prices. Afterwards, we can sort them in descending order to find the 10 movies that generated highest revenues.
+
+
+```{r, message = FALSE, warning = FALSE}
+most_revenue <-
+  Art_Theater %>%
+  group_by(EventName) %>%
+  summarize(total_rev = sum(as.double(Price))) %>%
+  arrange(desc(total_rev)) %>%
+  head(10)
+
+ggplot(data = most_revenue) +
+  geom_bar(aes(x=factor(EventName, levels = rev(EventName)), y= total_rev,fill = factor(EventName, levels = rev(EventName))), stat = "identity") +
+  coord_flip() +
+  labs(title = "Movies by Revenue", y = "Total Revenue", x = "Movie Names") +
+  theme_minimal() + 
+  theme(legend.position = "none")
+```
+
+Looking at the visualizations, we realize that some of the movies that were most watched by audience didn't necessarily generate most revenues. Let's look at the movies that were both popular to the audience and generated the most revenue. We'll attain this by finding the intersection of the Top 10 revenue movies and top 10 popular movies would give both audience and the theater the most satisfaction
+
+```{r}
+intersect(most_revenue$EventName, popular_table$EventName[1:10])
+```
+
+If the theater were to have a last day premier to make one last revenue, these movies should be the ones that should be premiered!
+

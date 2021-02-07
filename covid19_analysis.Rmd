@@ -1,0 +1,116 @@
+---
+title: "Covid19 analysis"
+author: "Daniel_Chung"
+date: "12/15/2020"
+output: html_document
+---
+
+![](https://uofi.box.com/shared/static/zao91jwox6dhxxslllkjdy12ydxz2ozy.jpg)
+
+### Goal:
+
+**We're going to analyze and investigate the claims that the president of the United States have been making in regards to the global pandemic. Specifically, we will analyze whether his claims can be supported by the facts.**
+
+## Covid Analysis
+
+```{r echo = T, message = F}
+library(tidyverse)
+library(kableExtra)
+library(ggplot2)
+library(cowplot)
+```
+
+This dataset (.csv) contains 266 observations and 19 columns. The observations are Covid information that contains up to October 13th of 2020. The information that includes in each observations are date, death, deathIncrease, inIcuCumulative, inIcuCurrently, hospitalizedIncrease, hospitalizedCurrently, hospitalizedCumulative, negative, negativeIncrease, onVentilatorCumulative, onVentilatorCurrently, posNeg, positive, positiveIncrease, recovered, states, totalTestResults, totalTestResultsIncrease. Learn more about the data with this [user guide](https://covidtracking.com/data/national) by clicking on Expand All under Definitions.
+
+```{r, echo = F, message = FALSE}
+Covid <- read_csv("https://uofi.box.com/shared/static/pt6rv26mqc5t67estl643p93ht7ka481.csv")
+```
+
+Let's visualize how the Nation is doing with Covid. It has been claimed by the president that the nation is doing perfectly fine in dealing with Corona. The Corona virus has been contained by the excellent guidance under the presidency, and there's really not a lot of things to worry. However, is this really true? Are the president's wordings truly accurate?
+
+Let's look at the number of positive cases using this data. Are the positive cases under control? Is it decreasing?
+
+First select the columns that are relevant to the data. Also, find out the positivity rate (%). Afterwards, visualize this graph of Daily New cases
+```{r}
+model1 <- 
+  Covid %>%
+  select(date,negativeIncrease,positiveIncrease,hospitalizedCurrently) %>%
+  mutate(total = negativeIncrease + positiveIncrease, pos_perc = positiveIncrease/total*100) %>%
+  drop_na()
+
+ggplot(model1, aes(x = `date`)) +
+  geom_line(aes(y =positiveIncrease,color = "New Cases"), size = 1)+
+  scale_color_manual(values = "deepskyblue4")+
+  scale_x_date(date_breaks = "30 days")+
+  labs(y= "Daily New Cases", x = "Date", color = "Legend",title = "Daily New Cases")+
+  geom_point(aes(date[which(positiveIncrease == max(positiveIncrease))],max(positiveIncrease)),size = 1.5,color = "deepskyblue4") +
+  geom_text(aes(date[which(positiveIncrease == max(positiveIncrease))]-10,max(positiveIncrease),label = max(positiveIncrease)),color = "deepskyblue4")+
+  geom_point(aes(max(date),positiveIncrease[which(date == max(date))]),size = 1.5,color="deepskyblue4")+
+  geom_text(aes(max(date)+9,positiveIncrease[which(date == max(date))]+2000,label = positiveIncrease[which(date == max(date))]),color = "deepskyblue4")+
+  geom_vline(xintercept = max(model1$date), linetype= "dashed", colour = "deepskyblue4" )+
+  geom_text(aes(max(date)-2,positiveIncrease[length(positiveIncrease)]+24000,label = max(date)),color = "deepskyblue4") +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill="black",colour = "Black"),
+        panel.grid.major = element_line(colour = "brown"),
+    panel.grid.minor = element_blank(),
+    plot.subtitle = element_text(size = 10))
+
+```
+
+Looking at the daily New positive cases, the trend in daily new cases is not decreasing. Rather, it's been increasing since the earlier weeks of September. Therefore, the Coronavirus that President claims to have been in control comes to skepticism.
+
+However, the graph is hard to read due to so many fluctuations in the peaks. Therefore, it would be better to rather observe 7 day average of the graph to accurately see the patterns and the trends of the cases in Corona.
+
+Find the 7 day average of the daily new cases of corona and visualize the 7-day average summary. 
+```{r}
+model2 <-
+  model1 %>%
+  mutate(seven_day_avg = as.integer(zoo::rollmean(positiveIncrease,k = 7, fill = NA))) %>% 
+  drop_na
+
+ggplot(model2, aes(x = `date`)) +
+  geom_line(aes(y =seven_day_avg,color = "New Cases"), size = 1)+
+  scale_color_manual(values = "deepskyblue4")+
+  scale_x_date(date_breaks = "30 days")+
+  labs(y= "7 day Average of New Cases", x = "Date", color = "Legend",title = "7 Day Average ")+
+  geom_point(aes(date[which(seven_day_avg == max(seven_day_avg))],max(seven_day_avg)),size = 1.5,color = "deepskyblue4") +
+  geom_text(aes(date[which(seven_day_avg == max(seven_day_avg))]-10,max(seven_day_avg)+1300,label = max(seven_day_avg)),color = "deepskyblue4")+
+  geom_point(aes(max(date),seven_day_avg[which(date == max(date))]),size = 1.5,color="deepskyblue4")+
+  geom_text(aes(max(date)+9,seven_day_avg[which(date == max(date))]+2000,label = seven_day_avg[which(date == max(date))]),color = "deepskyblue4")+
+  geom_vline(xintercept = max(model1$date), linetype= "dashed", colour = "deepskyblue4" )+
+  geom_text(aes(max(date)-2,seven_day_avg[length(seven_day_avg)]+24000,label = max(date)),color = "deepskyblue4") +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill="black",colour = "Black"),
+        panel.grid.major = element_line(colour = "brown"),
+    panel.grid.minor = element_blank(),
+    plot.subtitle = element_text(size = 10))
+```
+
+Wow! That's a lot smoother. Looking at this curve, we can definitely see the pattern of new cases in Covid. Although the Covid has gone to a decreasing trend after its second peak, we can clearly tell that it's on the rise again at this very moment of October. This means that President's reassuring words of Covid cases being in control come into even heavier skepticism. It's more like that Covid is heading towards its third peak, higher than ever before. 
+
+However, some may ask whether this positivity in Corona truly is fatal. To answer this problem, let's look at the trend for the number of people hospitalized due to Corona. Visualize the number of people that are hospitalized daily due to corona.
+
+```{r}
+ggplot(model2, aes(x = `date`)) +
+  geom_line(aes(y =hospitalizedCurrently,color = "New Cases"), size = 1)+
+  scale_color_manual(values = "deepskyblue4")+
+  scale_x_date(date_breaks = "30 days")+
+  labs(y= "Hospitalized New Cases", x = "Date", color = "Legend",title = "Daily New Cases")+
+  geom_point(aes(date[which(hospitalizedCurrently == max(hospitalizedCurrently))],max(hospitalizedCurrently)),size = 1.5,color = "deepskyblue4") +
+  geom_text(aes(date[which(hospitalizedCurrently == max(hospitalizedCurrently))]-10,max(hospitalizedCurrently)+1300,label = max(hospitalizedCurrently)),color = "deepskyblue4")+
+  geom_point(aes(max(date),hospitalizedCurrently[which(date == max(date))]),size = 1.5,color="deepskyblue4")+
+  geom_text(aes(max(date)+9,hospitalizedCurrently[which(date == max(date))]+2000,label = hospitalizedCurrently[which(date == max(date))]),color = "deepskyblue4")+
+  geom_vline(xintercept = max(model1$date), linetype= "dashed", colour = "deepskyblue4" )+
+  geom_text(aes(max(date)-2,hospitalizedCurrently[length(hospitalizedCurrently)]+24000,label = max(date)),color = "deepskyblue4") +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill="black",colour = "Black"),
+        panel.grid.major = element_line(colour = "brown"),
+    panel.grid.minor = element_blank(),
+    plot.subtitle = element_text(size = 10))
+```
+
+The two peaks seem to correlate with the two peaks on daily New positive cases. We can see that the times that the hopsitals were fileld with patients came a little later than the actual peaks, which indicates that the slow rise currently (October 10th) of the hopsitalized patient graph can correlates to the rise of the graph on new cases. The Coronavirus, therefore, is increasing with its same potent of fatality.
+
+With all these visulaizations indicating that the Covid cases are on the rise, it's troubling to see that the third peak in daily new cases are about to come. People need to be careful in their activities. They need to wear masks and social distance. Otherwise, we would see the daily new cases break the record for highest daily cases and highest hospitailization record. 
+
+It is quiet unacceptable to see that President giving false sense of security is really making more people to get corona. The virus is absolutely not in control. Hopefully, the president fixes his words to really give people in America heightened sense of awareness on this virus. We must act together to defeat this disease!
