@@ -14,6 +14,7 @@ output: html_document
 
 ## Inspection Data for Food Places
 
+The following code is to load libraries that are necessary to load different data visualizations, tables, and data manipulations.
 ```{r echo = T, message = F}
 library(tidyverse)
 library(kableExtra)
@@ -32,10 +33,11 @@ This dataset (.csv) contains 124372 observations and 16 columns. The observation
 
 ![](https://uofi.box.com/shared/static/q4hrrsv4couvs7gnouykwgjxdvc3eb5j.jpg)
 
-Before we start tackling such questions, we want to make sure that the investigators have investigated the food vendors in Chicago with correct measures. With Chicago being such a big city, there might be discriminatory inspection practices based on different sections of Chicago. Let's check whether there is any sectarianism within the investigation. If we find such sectarianism, that we should abandon this data as it's not valid.
+Before we start tackling the goal, we want to make sure that the investigators have investigated the food vendors in Chicago with correct measures. With Chicago being such a big city, there might be some discriminatory inspection practices based on different sections of Chicago. Let's check whether there is any sectarianism within the investigation. If we find such sectarianism, that we should abandon this data as it's not valid.
 
-Let's first look at the most recent investigations that have occured in each restaurants.
+Let's first look at the most recent investigations that have occured in each restaurants. 
 
+The following code cleans the data by letting us analyze the food vendors at the most recent dates.
 ```{r}
 Unique_insp <- Inspections %>%
   group_by(`AKA Name`)
@@ -71,7 +73,7 @@ plot2 <-ggplot(data = failed_rest) +
 plot_grid(plot1,plot2,align = "h",ncol = 2)
 ```
 
-Looking at the graph, we can tell that the restaurants that failed the inspection and the restaurants that passed the inspection are located evenly throughout the city. This indicates that the possibility of sectarianism is very low, and this data seems to be a valid data. There aren't any one specific region that passed the inspection more than the fails, and its opposites are also true.
+Looking at the graph, we can tell that the restaurants that failed the inspection and the restaurants that passed the inspection are located evenly throughout the city. This indicates that the possibility of sectarianism, or discriminatory practices based on the area of where one lives, is very low. Therefore, this data seems to be a valid data. There aren't any one specific region that passed the inspection more than the fails, and its opposites are also true.
 
 Knowing that the inspections are fair and sound, and the data is valid, we can now move on to the next step, which is about safety levels of various food vendors in Chicago.
 
@@ -81,7 +83,9 @@ Knowing that the inspections are fair and sound, and the data is valid, we can n
 
 Now let's ask ourselves the first question : Which food vendors are the most likely to damage the health of the public with their violations of inspections?
 
-In order to figure this out, we have to consider the risk level of the food vendor and the number of total violations the place had in the past. We would like to have food places with highest risk of adversely affecting public health to have the smallest amount of violations, while it's more flexible with food vendors that have a lower risk. In order to compensate for different risk levels, we'll put different limitations for vendors with different risk levels. These limitations are 16 for risk level 3, 18 for risk level 2, and 20 for risk level 1 (3 being the lowest risk and 1 being the highest). Let's list out the food vendors that go over these limitations.
+In order to figure this out, we have to consider the risk level of the food vendor and the number of total violations the place had in the past. We would like to have food vendors with the highest risk of adversely affecting the public health to have the smallest amount of violations, while the restriction is more flexible with food vendors that have a lower risk. As an example, we would want to treat a restaurant with risk 1 (High) differently than a small grocery store with risk 3 (low).
+
+In order to compensate for the different risk levels, we'll put different limitations for vendors with such different risk levels. These limitations are 16 for risk level 3, 18 for risk level 2, and 20 for risk level 1. Let's list out the food vendors that go over these limitations.
 
 ```{r}
 closed <-
@@ -95,9 +99,9 @@ closed %>%
   kable_material(c("striped","hover"))
 ```
 
-With the such overwhelming number of violations in these restaurants, it seems like they should pay a hefty fines or temporarily close the place to learn a lesson to follow the safety regulations imposed by the city.
+As you can see above, these are the most dangerous food vendors in Chicago according to our data. With such overwhelming number of violations in these vendors, it seems like the city should do more, such as making them pay hefty fines or temporarily close the place, to penalize these vendors.
 
-Let's see where these places are located at and their associated Facilities (so that inspectors know where to put more cautionary measures!)
+Let's see where these places are located at and their associated Facilities.
 
 ```{r}
 risky <- closed$`AKA Name`
@@ -119,13 +123,13 @@ ggplot(data = risky_restaurants) +
 
 ```
 
-These are the locations of food vendors that should be avoided and seem to damage the public health the most. Although low risk places are somewhat tolerable (risk level 2 or 3), since their main menu might not necessarily food (although it still might not be a good idea to go), the places that are marked as Risk 1 level must be absolutely avoided. These Risk 1 level places are most likely going to be restaurants, and it might not be the best option to go to a place where they violated over 20 food inspections. Like mentioned before, the city should definitely pose a very harsh restrictions and punishments that will make these food vendors to never consider violating the food inspections.
+These are the locations of food vendors that should be avoided and seem to damage the public health the most. Like mentioned before, the city should pose a harsher restrictions and punishments that will make these food vendors to never consider violating the food inspections.
 
 ### Third Investigative Cycle (PPDAC)
 
 ![](https://uofi.box.com/shared/static/wg2kqwn5pyhg8iqov0k9i81nupy5p62k.jpg)
 
-Now let's dive into next question related to safety. Among the restaurants listed, which restaurants are safe places to eat with the family, and where are their locations at?
+Now let's dive into next question related to safety. Among the restaurants listed, which restaurants are safe places to eat with the family, and where are their locations?
 
 First, let's look at only the most recent restaurants in the data, as the data is filled with food vendors other than restaurants and have many repeats due to several inspections over the years.
 
@@ -179,7 +183,7 @@ ggplot(data = safe_restaurants) +
 nrow(safe_restaurants)
 ```
 
-That literally truncated our number of restaurants by a lot! However, there's still 2385 restaurants remaining to choose. I'd say that's enough choices to choose which restaurants to go to in Chicago! According to our data, these selected 2385 restaurants are safe places to go and dine in. However, the other 8208 (11593 - 2385 = 8208) restaurants aren't recommended by our data, as they have a pretty decent amount of food inspection violations to say that they are not safe.
+That literally truncated our number of restaurants by more than half. However, there's still 2385 restaurants remaining to choose. I'd say that's enough choices to choose which restaurants to go to in Chicago. According to our data, these selected 2385 restaurants are safe places to go and dine in. However, the other 8208 (11593 - 2385 = 8208) restaurants aren't recommended by our data, as they have a pretty decent amount of food inspection violations to say that they are not safe.
 
 ### Fourth Investigative Cycle (PPDAC)
 
@@ -222,7 +226,7 @@ violated_schools %>%
 (63+27+12+4+2)/nrow(recent_school)*100
 ```
 
-In the previous investigative cycle, we said any restaurants that have greater than or equal to 5 violations are not safe restaurants. We see that in this data, there are more than 100 schools that have violated the violations 5 or more times. With simple mathematical calculations, we see that this is over 10% of the schools that are in this dataset. This is simply shocking and comes to show how unsafe these school cafeterias can be. It also comes to show that, again, that violations must be stronger so that places that have received violations must never even come to violate again.
+In the previous investigative cycle, we said any restaurants that have greater than or equal to 5 violations are not safe restaurants. We see that in this data, there are more than 100 schools that have violated the violations 5 or more times. With simple mathematical calculations, we see that this is over 10% of the schools that are in this dataset. This is simply shocking and comes to show how unsafe these school cafeterias can be. It also comes to show that, again, that violations must be held stronger so that places that have received violations must never even come to violate again.
 
 For reference, let's see where the schools that have 5 or more violations in Chicago are located relative to other safe schools.
 
