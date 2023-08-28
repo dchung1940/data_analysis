@@ -1,6 +1,6 @@
 # Data Analysis
 
-This repository is for storing many short data analysis done using data. 
+This repository is for storing many short data analysis done using pulbic data. 
 Currently it includes analysis on Chicago food vendors, covid-19, and local Champaign data.
 They all use problem, plan, data, analysis, conclusion (PPDAC) cycle for its analysis.
 All the files are created by using R and R markdown
